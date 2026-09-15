@@ -8,7 +8,7 @@ Chopstickers Renewal 実行正本 / Execution Single Source of Truth
 - **本ファイルの位置づけ:** Chopstickers Renewal を完成させるための **現在地・統合順序・制御方法** の正本。「今どこまで出来ていて、次に何をどうするか」を定義する。
 - **対になる文書:** 事業・システムの「あるべき仕様」は `CHOPSTICKERS_CANONICAL.md`。本ファイルには business rule を書かない（参照のみ）。
 - **自動化制御の詳細:** `docs/AUTOMATION_CONTRACT.md`（delivery-core）。本ファイル §7 はその要約。
-- **更新日:** 2026-09-11（初版）。
+- **更新日:** 2026-09-16（pricing canonical の実装境界を追記）。
 - **authority:**
   - business / system 事実 → `CHOPSTICKERS_CANONICAL.md` が優先。
   - execution / progress / integration 順序 → 本ファイルが優先。
@@ -109,6 +109,10 @@ Chopstickers Renewal 実行正本 / Execution Single Source of Truth
 - **dependency:** Green Firebase project（provision 済み）。
 - **next_action:** PR #19 → #21 のチェーンを `renewal/green-20260909` へ統合する順序を確定。**Green 版 admin-products ファイルを Blue 版で上書きしない**（Green が新しい）。rules apply / write は owner 承認まで待つ。
 
+### 4.3a Product pricing / Series read contract（Issue #83）
+- **status:** Product pricing canonical + Series read contract は Delivery Core PR #89（HEAD `75aa594aff71e56558bb3a98c67b4d735554384a`）で実装済み。Series に価格は持たせない（business rule は `CHOPSTICKERS_CANONICAL.md` §5）。254/254 tests pass。
+- **remains:** 既存 Product の `additional_price` / `currency` 欠損は自動migrationしない。Admin Products `additional_price` UI、Storefront Product 価格表示、pricing calculation、Cart、Cart-level discount、Order pricing snapshot / 接続、`giftbox` → `matching_pair` ID migration、Select Category UI変更は未実装。
+
 ### 4.4 Admin Delivery
 - **status:** `review_ready`（Green shape 統合 PR 提出済み・未マージ）
 - **source:** UI = hp `renewal/wip-snapshot-20260909` @ `aef5afd` の `admin-delivery.html`（+ `shape-admin.css` + `js/core-api-shape.js`）。過去の UI 検討: `origin/admin-delivery-ui-*` 群、PR #12。Green 統合 = `green/delivery-shape-integration-20260911` @ `8bc4777` / **PR #25**。
@@ -198,6 +202,7 @@ Chopstickers Renewal 実行正本 / Execution Single Source of Truth
 2. **Admin Products Green Storage**（4.3）— PR #19 → #21 を `renewal/green-20260909` へ。rules apply / write は owner 承認まで保留。
 3. **Green GAS verification**（4.2）— PR #57 review。Green GAS project との接続確認（deploy は owner 承認）。
 4. **Green frontend connection**（4.8 の一部）— storefront を Green base で健全化。共有ファイルは reconciliation 後。
+   Product pricing / Series read contract（4.3a）との整合を確認し、欠損値や Gift `additional_price` を推測して補完しない。
 5. **Admin Delivery integration**（4.4 / PR #25）— ng2 / admin-delivery / admin-general を `renewal/green-20260909` へ。Core API endpoint を Green 向けに配線。
 6. **Katakana / NG2 / Admin feature integration**（4.6 / 4.7 / 残 admin）— Katakana は engine/dict を unit 取り込み + ブリッジ手適用。NG2 は endpoint 配線後に Test Mode で確認。
 7. **E2E**（4.11）— Green で全フロー通し。
