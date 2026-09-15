@@ -6,8 +6,8 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 ## 1. Document status
 
 - **本ファイルの位置づけ:** Chopstickers の「事業として何を提供しているか」「システムがどう振る舞うべきか」を定義する **business / system canonical source**。
-- **対になる文書:** 改修の進行・統合順序・作業ルールは `RENOVATION_EXECUTION.md`（execution canonical）。本ファイルには実装進捗・タスク状態を書かない。
-- **更新日:** 2026-09-11（初版。事業概要_最新版_20260908 / Delivery System Rules.md 2026-09-03 / Roadmap 2026-09-08 Strategy Revision / DailyLog 2026-09-01〜09-11 / delivery-core PR #56 owner decision を統合）
+- **対になる文書:** 改修の進行・統合順序・作業ルールは `RENOVATION_EXECUTION.md`（execution canonical）。本ファイルにはタスク状態を書かず、仕様の実装境界のみ §5.8 に記す。
+- **更新日:** 2026-09-16（Product pricing / Series hierarchy の owner decision を反映）
 - **supersedes（本ファイルが正本を引き継ぐ対象。原本は参照資料として残す）:**
   - Google Drive『事業概要_最新版_20260908』のうち「現行サービス／事業コンセプト／配送ルール／価格／admin構成／データ構成」に関する記述
   - Google Drive『事業概要_Chopstickers_v2.md』（旧版・全体）
@@ -160,18 +160,28 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 
 ## 5. Product / pricing
 
-> 「現行」= 2026-09-11 時点で本番稼働している確定値。未確定は「未確定」と明記する。旧 Workshop 価格・旧提案価格を確定扱いしない。
+> 「現行」= 本番で稼働している価格。「方針確定」= owner decision だが実装・表示は別途確認する。未確定は推測しない。
+
+### 5.0 Product pricing / hierarchy canonical（2026-09-16 owner decision）
+- 階層は **Category → Series → Product**。`daily_use` の Series は Classic / Sakura。`gift` の Series は Matching Pair、Product は Engimon / Happy Life / 将来追加する夫婦箸 Gift 商品。
+- Series canonical は `series_id` / `category_id` / `label` / `sort_order` / `status`。Series は `price` / `base_price` / `additional_price` / `currency` を持たない。**価格 SSOT は Product** の `price` / `additional_price` / `currency`（`JPY`）。Series pricing 方針は撤回済み。
+- `additional_price` は**同じ `product_id` の2個目以降、1個あたり**の価格。合計は数量1なら `price`、数量2なら `price + additional_price`、数量3なら `price + 2 × additional_price`。異なる `product_id` 間で共有しない。
+- 現HPコードの Gift Series ID は `giftbox`。Matching Pair は business / display 名であり、`giftbox` → `matching_pair` の ID migration は未実施。
+- 将来の Green Storefront 入口は Select Series → Select Category。Classic (Daily Use) → Daily Use、Gift Box Series → Gift。Select Category UI変更は未実装。
+- 全商品30% OFF・クーポン・合計金額条件割引などは、将来の **Cart-level discount** として Product pricing と分離する。Cart と Cart-level discount engine は未実装。
 
 ### 5.1 Classic (Daily Use) — 現行
 - 刻印対象: 箸のみ。着色: 金・銀・無色（Burn）。「Silver」は廃止済み。
 - 使用可能文字: 英数字・ひらがな・カタカナのみ。**最大10文字**（内部スペース・句読点含む。入力・刻印出力の双方に10文字上限。超過は切り詰めず拒否）。
 - 価格（現行）: 1膳 **¥3,500** / 追加1膳ごと **+¥2,000** / まとめ買い最大 **5膳（¥11,500）**。
+- Product pricing canonical: `price=3500` / `additional_price=2000` / `currency=JPY`。
 - 表記: "From ¥3,500 (Includes Engraving & Standard Delivery)"。
 
 ### 5.2 Matching Pair Gift Series — 現行
 - 刻印対象: 桐箱のみ（箸本体への刻印なし）。使用可能文字: **英語のみ**（カタカナ非対応）。
 - Engimon (Gift Box)（旧・梅）: **¥5,800**。
 - Happy Life (Gift Box)（旧・竹）: **¥7,800**。
+- Product pricing canonical: Engimon `price=5800`、Happy Life `price=7800`、いずれも `currency=JPY`。Gift Product の `additional_price` は未決定（`0` や通常価格と同額を設定しない）。
 - 「松（Pine）」プラン・「松竹梅」プラン名は**完全廃止**。
 - 文字数/行数: Engimon 最大18文字 × 8行 / Happy Life 最大18文字 × 12行。上限 20文字 / 15行（DailyLog 2026-09-08）。フォント: Times New Roman（Bold + Italic）。センター寄せ。
 
@@ -181,9 +191,9 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 ### 5.4 NG2 対応の料金 — 現行
 - 3rd Delivery ¥1,000 / Domestic Shipping ¥1,000 / Disposal 無料。
 
-### 5.5 Sakura Series — フロント未実装（未確定）
+### 5.5 Sakura Series — 価格方針確定・フロント未実装
 - 商品は入荷済み（花きらり 桜 22.5cm 金/黒、18cm ピンク/ブルー）。刻印テスト完了。
-- **HP フロントへの追加・販売価格は未確定**（Renewal の商品動的化フェーズで対応。`RENOVATION_EXECUTION.md` 参照）。
+- owner decision: Classic と同価格。Product pricing canonical は `price=3500` / `additional_price=2000` / `currency=JPY`。HP フロントへの追加と for kids（18cm）表示は未確定。
 
 ### 5.6 決済手段 — 現行
 - クレジット/デビット: VISA / Mastercard / AMEX / JCB（Discover / Diners は Stripe 未サポートのため非表示）。Google Pay / Apple Pay 有効。現金不可・100% 事前決済。
@@ -192,6 +202,10 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 
 ### 5.7 価格変更時の同期先（ハードコード）
 `js/products.json` / `js/forms.js` / `js/ui.js` / `js/firebase.js` / `index.html` / `js/translations.json` / `commerce.html`（`:root` の `--delivery-basic-jpy`）/ `tokyo-souvenir.html`。Stripe 決済リンクは価格変更で URL が変わらない（動的生成のため）。
+
+### 5.8 実装境界
+- Delivery Core PR #89（HEAD `75aa594aff71e56558bb3a98c67b4d735554384a`）で Series canonical と Product の `price` / `additional_price` / `currency` は実装済み（254/254 tests pass）。既存 Product の `additional_price` / `currency` 欠損は自動migrationしない。
+- Admin Products `additional_price` UI、Storefront Product 価格表示、pricing calculation、Cart、Cart-level discount、Order pricing snapshot / 接続は未実装。
 
 ---
 
@@ -257,7 +271,7 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 - **Blue（本番）:** project `chopstickers-workshop`、RTDB `https://chopstickers-workshop-default-rtdb.asia-southeast1.firebasedatabase.app`。
 - **Green（Renewal 統合）:** project `chopstickers-project`、RTDB `https://chopstickers-project-default-rtdb.asia-southeast1.firebasedatabase.app`。Web App / Hosting / Auth / Storage、Green 専用 Sheet / Drive / Calendar を provision 済み。
 - **主なノード（現行）:** `/status/*`（mainStatus / deliverySlots* / activeHours / usedMinutes / defaultCapacity / tickerMessage 等）、`/orders/`（個人情報。外部 read 遮断）、`/dailyData/`。
-- **改修目標構成:** `/products`（商品マスター: product_id / category / series_tag / name / name_i18n_key / size / price / available_characters / image_url / is_active / sort_order / stock_count）、`/orders`（注文・配送）、`/shopStatus` または既存 `status` 配下（営業・運行設定・deliverySlots）。既存構造を一度に全面置換しない。
+- **改修目標構成:** `/products`（商品マスター: product_id / category_id / series_id / name / name_i18n_key / size / price / additional_price / currency / available_characters / image_url / is_active / sort_order / stock_count）、Series（§5.0 の非価格フィールド）、`/orders`（注文・配送）、`/shopStatus` または既存 `status` 配下（営業・運行設定・deliverySlots）。既存構造を一度に全面置換しない。
 - Green admin-products の RTDB は `/products` `/productSeries` `/heroImages`（ルール案: root `.read/.write=false`、この3ノードのみ許可。詳細: hp `public/docs/green-rtdb.rules.json`）。
 - `production capacity`（usedMinutes）と `deliverySlots` は別概念。再配達・3rd Delivery で新規製作 capacity を再消費しない。
 
@@ -344,7 +358,8 @@ AI・実装者が **owner の明示的決定なしに変更してはならない
 | 項目 | 状態 |
 |---|---|
 | 3rd Delivery の「決済中の枠確保タイミング」（決済前の短時間 hold / 決済成功時 atomic 確保 / 既存 Stripe フロー活用 のどれか） | 未確定。Phase 1-A〜1-C で現行 Stripe/GAS を監査してから確定。確定前に 3rd Delivery 決済コードを実装しない（`再配達システム改修_設計書.md` §12） |
-| Sakura Series のフロント追加・販売価格・for kids（18cm）表示 | 未確定。商品は入荷済み。Renewal の商品動的化フェーズで対応 |
+| Sakura Series のフロント追加・for kids（18cm）表示 | 未確定。価格方針は Classic と同額で確定済み（§5.5） |
+| Gift Product の `additional_price` | 未決定。Engimon / Happy Life の通常価格は確定済み（§5.2） |
 | 配達エリア拡大（港区・渋谷区・新宿区の段階的緩和） | 未確定（新橋周辺は厳格除外を維持） |
 | Stripe Webhook 連携による在庫・記帳の完全自動化 | 未着手課題 |
 | 複数種同時購入（"+ Add a Gift Box"） | 未着手課題 |

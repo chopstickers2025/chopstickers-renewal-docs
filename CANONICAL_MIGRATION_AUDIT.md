@@ -65,6 +65,8 @@
 
 **まとめ:** ✅ 5項目（#1, #4, #6, #10, #11）／ ⚠️ 11項目。⚠️ はいずれも新2正本（C / E）で正しい現行仕様を明示済み。旧記述は「取り消し線 + 新（日付）」形式で原本に履歴として残っているもの（#2, #3）と、正本更新で解消すべきもの（#5, #7, #8, #9, #13, #14, #15, #16）に分かれる。
 
+**2026-09-16 owner decision（履歴追記）:** 旧 Series pricing 方針を撤回し、Product の `price` / `additional_price` / `currency` を価格 SSOT とした。Series は `series_id` / `category_id` / `label` / `sort_order` / `status` のみ。詳細と未実装境界は C §5、E §4.3a。旧方針の記録は歴史資料として維持する。
+
 ---
 
 ## 3. Old docs classification（Phase D 提案・未実施）
