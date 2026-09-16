@@ -76,7 +76,7 @@
 - **Blue → Green capacity cutover:** 5ステップ手順（新規受付停止 → 予約監査 → one-time migration → 検証 → Green intake 開始）。以後 Green counter のみ正本、恒久 sync counter 禁止。詳細 C §8.7、E §4.12。
 - **Delivery Time UI:** Other/Special Request 廃止。AM/PM タブへ変更。Cutoff は "Order by midnight" を基本文言とし、グレースピリオドは別文明記。詳細 C §4.13。
 - **Important Rules 文言:** "hotel" → "Accommodation" 表記統一。到着後10分待機ルールの後に無料再配達3点（最短90分後・1回のみ・営業時間内空き枠）を明記。旧「120分前まで無料」表現は使わない。詳細 C §4.6a。
-- **Temporary Coming Soon production mode:** owner 承認済み。Renewal 完成まで production を Coming Soon 紹介モードとし、旧 Blue 注文コードは削除せず保持。詳細 C §9.4、E §4.13。2026-09-17 時点で production 未deploy。
+- **Temporary Coming Soon production mode（PR #75, hp）:** owner 承認済みの実装だが、**現時点では本番投入しない方針**（`main` 未merge・production 未deploy）。旧 Blue 注文コードは削除せず保持する設計。詳細 C §9.4、E §4.13。**現行 production の "Ordering unavailable" 表示は、この PR #75 の deploy ではなく、owner が既存 Blue サイトを手動でメンテナンス＋配達受付停止モードへ切り替えたことによるもの**（2026-09-17）。
 
 ---
 

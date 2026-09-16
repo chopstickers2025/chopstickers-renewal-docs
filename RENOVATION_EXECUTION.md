@@ -204,15 +204,17 @@ Chopstickers Renewal 実行正本 / Execution Single Source of Truth
 - **dependency:** E2E（4.11）green。
 - **next_actionःなし（E2E 完了まで）。**merge to main / deploy / production Firebase・GAS・Stripe・Hosting・DNS は owner 承認まで実施しない。**
 
-### 4.13 Temporary Coming Soon production mode（owner-approved 2026-09-17）
-- **status:** `review_ready`（PR 作成済み・`main` 未merge・**production 未deploy**）
+### 4.13 現行 production 状態（Blue maintenance mode）/ Coming Soon frontend（PR #75）
+
+- **現在の production 状態（owner による手動切替・2026-09-17）：** owner が既存 **Blue サイトをメンテナンス＋配達受付停止モードへ手動切替**した。新規注文受付は停止中。現在 chopstickers.jp（EN/DE/ES/FR/IT）に表示されている "major renewal" / "Ordering is temporarily unavailable" の案内は、**この Blue 既存メンテナンスモードの手動切替によるもの**。下記 PR #75（Coming Soon frontend）の deploy によるものではない。business rule: `CHOPSTICKERS_CANONICAL.md` §9.4。
+- **status（PR #75, Coming Soon frontend）:** `review_ready`（PR 作成済み・`main` 未merge・**production 未deploy・現時点では本番投入しない方針**）。
 - **business rule:** `CHOPSTICKERS_CANONICAL.md` §9.4。
-- **source:** hp PR #75（`renewal/coming-soon-mode-20260917`、base `reconciliation/blue-production-sync-20260914`）。
+- **source:** hp PR #75（`renewal/coming-soon-mode-20260917`、base `reconciliation/blue-production-sync-20260914`、**state: OPEN**）。
 - **done:** Renewal / Coming Soon バナー追加。Order-entry point（Classic/Gift select・sticky CTA・FV preview-modal Order・Lineup product-modal action・homepage delivery calendar）と `window.enterFocusMode()` を `window.RENEWAL_COMING_SOON` フラグでガード。`#delivery-section` 非表示。Katakana Converter / Engraving Preview は EN/DE/ES/FR/IT すべてで維持。旧 Blue 注文コードは削除せず、フラグで無効化のみ。ローカル + Firebase Hosting preview channel（`chopstickers-workshop--renewal-coming-soon-preview-*`）で GAS/Stripe 通信 0 件を確認済み。
-- **remains:** production Hosting への実 deploy（`firebase deploy --project chopstickers-workshop`）。本コマンドは owner 承認済みだが、実行環境側の auto-mode 安全ガードにより自動実行がブロックされたため、owner 本人の実行、または権限付与後の再実行が必要。
+- **remains:** production Hosting への実 deploy（`firebase deploy --project chopstickers-workshop`）は **現時点では実施しない**（owner 方針。現行 Blue メンテナンスモードで新規注文受付停止という目的は既に満たされているため）。
 - **integration target:** production Hosting（`chopstickers-workshop`）。Green Storefront（§3a・4.14）完成後に置換。
 - **dependency:** なし（Blue frontend のみの変更、backend 非依存）。
-- **next_action:** owner が `firebase deploy --project chopstickers-workshop` を実行するか、実行許可を付与。deploy 完了後、本節と `CHOPSTICKERS_CANONICAL.md` §9.4 の status を `deployed` へ更新し、chopstickers.jp + /de /es /fr /it で Converter / Preview / Coming Soon CTA / 注文導線遮断 / GAS・Stripe 通信 0 を実ブラウザ確認する。
+- **next_action:** 現時点で next_action なし（PR #75 の deploy は保留・見送り）。方針変更時、owner が `firebase deploy --project chopstickers-workshop` を実行するか実行許可を付与し、本節と `CHOPSTICKERS_CANONICAL.md` §9.4 の status を `deployed` へ更新して chopstickers.jp + /de /es /fr /it で Converter / Preview / Coming Soon CTA / 注文導線遮断 / GAS・Stripe 通信 0 を実ブラウザ確認する。
 
 ### 4.14 Storefront Order Builder / Cart / Pricing Snapshot
 - **status:** `review_ready`（表示・レビューまで実装済み・`core_create_order` 未接続・`main` 未merge・production 未deploy）
@@ -398,7 +400,7 @@ reversible な repo-only 作業（コード / docs / テスト / branch / commit
 8. **Katakana**: `feature/katakana-r2-20260910` @ `39bea3c` の engine/dict を `renewal/green-20260909` へ unit 取り込み、ブリッジ差分を Green の `ui.js` / HTML へ手適用。
 9. 上記マージ後に **Green frontend / storefront reconciliation** → **E2E**（Green・staging）。
 10. E2E green 後に **production cutover decision**（owner）。
-11. **hp PR #75 の production Hosting deploy**（4.13）— owner が `firebase deploy --project chopstickers-workshop` を実行、または実行許可を付与。deploy 完了後に実ブラウザで chopstickers.jp + /de /es /fr /it・Converter・Preview・Coming Soon CTA・注文導線遮断・GAS/Stripe 通信 0 を確認し status 更新。
+11. **hp PR #75（Coming Soon frontend）の production Hosting deploy**（4.13）— **現時点では保留（本番投入見送り）。** 現行 production は既存 Blue メンテナンスモードの手動切替で新規注文受付停止済みのため。方針変更時のみ、owner が `firebase deploy --project chopstickers-workshop` を実行、または実行許可を付与。deploy 完了後に実ブラウザで chopstickers.jp + /de /es /fr /it・Converter・Preview・Coming Soon CTA・注文導線遮断・GAS/Stripe 通信 0 を確認し status 更新。
 12. **hp PR #73 → #74 を review**（4.14）— Cart/Review・Pricing Snapshot。混載 checkout 解禁は次項の後。
 13. **delivery-core PR #90 を review**（4.15）— canonical Order Core。review 後、storefront 接続・Green GAS deploy 判断は owner。
 

@@ -398,14 +398,16 @@ Category → Matching Pair → Gift Product → Gift engraving → Cart / Review
 - DNS / ドメイン変更
 - これらに到達したら停止し、必要な承認を具体的に述べる（`RENOVATION_EXECUTION.md` §9、`AUTOMATION_CONTRACT.md` §7）。
 
-### 9.4 Temporary production mode — Coming Soon（2026-09-17 owner-approved）
-- **Renewal 完成まで、現行 Blue ordering UI を一時休止する。** production homepage は Renewal / Coming Soon 紹介モードとする。
-- **残す:** FV / Katakana Converter / Engraving Preview / Product Lineup（read-only）/ Brand・Service information / Legal / Contact。
-- **停止:** Order UI / Delivery slot selection / Customer order form / Checkout / Stripe order flow / GAS order flow。
-- **EN / DE / ES / FR / IT すべて同じ扱い**（注文導線停止を全言語で統一）。
-- **旧 Blue 注文コードは削除せず保持する。** frontend 表示・到達可否のみを変更し、production Firebase / GAS / Stripe / DNS / Admin は変更しない。
-- これは **temporary production mode** であり、Renewal 完成後に Green Storefront（§3a）へ置換される。
-- **実装境界:** hp PR #75（`renewal/coming-soon-mode-20260917`、base `reconciliation/blue-production-sync-20260914`）。`window.RENEWAL_COMING_SOON` フラグで order-entry point（Classic/Gift select・sticky CTA・FV preview-modal Order・Lineup product-modal action・homepage delivery calendar）と `window.enterFocusMode()` をガード。`#delivery-section` は非表示。GAS/Stripe 通信 0 件をローカル + preview channel で確認済み。**2026-09-17 時点で production 未deploy**（`main` 未merge・auto-merge禁止・owner 承認済みだが実 deploy コマンドは環境側ガードで保留中）。deploy 完了後、本節と `RENOVATION_EXECUTION.md` §4.13 の status を更新する。
+### 9.4 Temporary production mode — Blue maintenance mode / Coming Soon frontend（2026-09-17）
+
+- **現在の production 状態（owner による手動切替・2026-09-17）：** owner が既存 **Blue サイトをメンテナンス＋配達受付停止モードへ手動切替**した。新規注文受付は停止中。現在 chopstickers.jp（EN/DE/ES/FR/IT）に表示されている "major renewal is coming" / "Ordering is temporarily unavailable" の案内は、**この Blue 既存メンテナンスモードの手動切替によるもの**であり、下記 PR #75（Coming Soon frontend）の deploy によるものではない。PR #75 は下記の通り未deploy。
+- **PR #75（Coming Soon frontend）の方針:** owner 承認済みの実装だが、**現時点では本番投入しない**（`main` 未merge・production 未deploy・deploy自体を見送り。上記の現行 Blue メンテナンスモードと役割が重複するため）。将来 deploy する場合に備え、以下は実装内容の記録として残す。
+  - **想定される「残す」対象:** FV / Katakana Converter / Engraving Preview / Product Lineup（read-only）/ Brand・Service information / Legal / Contact。
+  - **想定される「停止」対象:** Order UI / Delivery slot selection / Customer order form / Checkout / Stripe order flow / GAS order flow。
+  - **EN / DE / ES / FR / IT すべて同じ扱い**（注文導線停止を全言語で統一する設計）。
+  - **旧 Blue 注文コードは削除せず保持する。** frontend 表示・到達可否のみを変更し、production Firebase / GAS / Stripe / DNS / Admin は変更しない設計。
+  - deploy された場合は **temporary production mode** として扱い、Renewal 完成後に Green Storefront（§3a）へ置換される。
+- **実装境界:** hp PR #75（`renewal/coming-soon-mode-20260917`、base `reconciliation/blue-production-sync-20260914`、**state: OPEN**）。`window.RENEWAL_COMING_SOON` フラグで order-entry point（Classic/Gift select・sticky CTA・FV preview-modal Order・Lineup product-modal action・homepage delivery calendar）と `window.enterFocusMode()` をガード実装済み。`#delivery-section` は非表示。GAS/Stripe 通信 0 件をローカル + preview channel で確認済み。**production 未deploy・deploy 予定なし（現状の owner 方針）。** 方針変更時は、本節と `RENOVATION_EXECUTION.md` §4.13 の status を更新する。
 
 ---
 
@@ -432,7 +434,7 @@ AI・実装者が **owner の明示的決定なしに変更してはならない
 17. Cart は Daily Use / Gift 混載表示可能・共通 canonical。Product identity は `product_id`。全 Line review gate なしに checkout 不可（§3a.4）。
 18. 価格 SSOT は Product の `price` / `additional_price` / `currency`。Order 確定金額は server-authoritative。Order create 成功時の pricing snapshot（`schema_version: 1`）は以後の価格変更の影響を受けない（§5.0・§5.9）。
 19. Green の Order 作成は `idempotency_key` 必須の同一 reservation 境界で stock / delivery slot / production capacity を処理する。Blue `usedMinutes` との dual-write・恒久 sync counter は禁止（§8.3b・§8.7）。
-20. Renewal 完成まで production は Coming Soon temporary mode。旧 Blue 注文コードは削除しない（§9.4）。
+20. Renewal 完成まで production は新規注文受付停止状態を維持する。現行は既存 Blue のメンテナンスモード（owner 手動切替）によるものであり、PR #75（Coming Soon frontend）は本番投入しない。いずれの場合も旧 Blue 注文コードは削除しない（§9.4）。
 
 ---
 
