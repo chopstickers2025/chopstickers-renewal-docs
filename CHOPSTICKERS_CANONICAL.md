@@ -6,8 +6,8 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 ## 1. Document status
 
 - **本ファイルの位置づけ:** Chopstickers の「事業として何を提供しているか」「システムがどう振る舞うべきか」を定義する **business / system canonical source**。
-- **対になる文書:** 改修の進行・統合順序・作業ルールは `RENOVATION_EXECUTION.md`（execution canonical）。本ファイルにはタスク状態を書かず、仕様の実装境界のみ §5.8 に記す。
-- **更新日:** 2026-09-16（Product pricing / Series hierarchy の owner decision を反映）
+- **対になる文書:** 改修の進行・統合順序・作業ルールは `RENOVATION_EXECUTION.md`（execution canonical）。本ファイルにはタスク状態を書かず、仕様の実装境界のみ §5.8・§3a.4・§8.3a/8.3b に記す。
+- **更新日:** 2026-09-17（Storefront Order Builder / Cart / canonical Order Core / reservation ownership / Delivery Time UI / Important Rules 文言 / Temporary Coming Soon production mode の owner decision を反映。詳細は §3a・§4.13・§5.9・§8.3a・§8.3b・§9.4）
 - **supersedes（本ファイルが正本を引き継ぐ対象。原本は参照資料として残す）:**
   - Google Drive『事業概要_最新版_20260908』のうち「現行サービス／事業コンセプト／配送ルール／価格／admin構成／データ構成」に関する記述
   - Google Drive『事業概要_Chopstickers_v2.md』（旧版・全体）
@@ -71,6 +71,39 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 
 ---
 
+## 3a. Storefront Order Builder & Cart canonical（2026-09-17 owner decision）
+
+> 上記 §3 step 1「Order」の canonical 画面構造。旧「Select Category 専用画面 → Category → 注文画面」は**廃止**。§5.0 の旧記述（Select Series → Select Category）はこの節へ superseded。
+
+### 3a.1 Single Order Builder
+- 顧客の入口は **単一の Order Builder 画面**。専用の Select Category 画面は持たない。
+- 画面上部に **常設** の `[ Daily Use ] [ Gift ]` カテゴリ切替を置く。
+- カテゴリ切替は **注文入力の途中でも可能**。切替しても既存の Cart 内容・入力済みの制作情報（engraving text / 色 / 素材選択等）を消さない。
+
+### 3a.2 Daily Use フロー
+Category → Series → Product / Material → Engraving → Cart / Review
+
+### 3a.3 Gift フロー
+Category → Matching Pair → Gift Product → Gift engraving → Cart / Review
+
+### 3a.4 Cart / Review canonical
+- **共通 Cart を canonical とする。** Daily Use と Gift を同じ Cart 内に混載可能。
+- Line の Product identity は `product_id`。
+- Daily Use は同一 Product を **Line 集約**する（数量表示）。個別の engraving・向き・選択内容は **Unit 単位で保持**する（集約後も Unit ごとの製作情報は失わない）。
+- **全 Line review gate:** Cart 内の全 Line が reviewed 済みでない限り checkout へ進めない。
+- Review Modal は **category 別 renderer**（Daily Use renderer / Gift renderer）を持つ共通シェル。
+- 製作情報を編集した Line は `reviewed = false` に戻る（再レビュー必須）。
+- Pricing snapshot は `schema_version: 1`（詳細 §5.9）。
+- **旧仕様（廃止方向）:** Pair ごとの固定状態表示（旧 Gift の Pair 単位 UI）は廃止方向とする。
+- Cart は Order Builder 画面下部の **常時確認 UI** として統合する（別画面へ遷移しない）。
+
+### 3a.5 実装境界（2026-09-17 時点）
+- hp PR #73（`storefront-cart-order-builder-20260917`）: 共有 Cart（category tabs・category 別 subtotal・Order Total）、Daily Use の Line 集約 + Unit 保持、共通 Review Modal シェル + category 別 renderer、編集時 `reviewed=false` を実装。Daily Use/Gift 混載の **表示・レビューは可能**だが、既存 submit payload が両カテゴリを同時に表現できないため **混載 checkout は意図的にブロック**（storefront 側で `core_create_order` 未接続のため）。既存の Daily Use 単体 / Gift 単体 submit payload は無変更。
+- hp PR #74（`storefront-order-pricing-snapshot-20260917`）: reviewed 済み Cart から `schema_version: 1` の pricing snapshot を生成（詳細 §5.9）。混載 Cart の snapshot 生成はブロック。
+- **未実装:** Order Builder 入口（上部 `[ Daily Use ] [ Gift ]` 常設トグルによる旧 Select Category 画面の置換）、混載 Order の storefront → `core_create_order` 接続、Pair 固定状態表示の廃止（UI 側）。PR #73/#74 は `main` 未merge・production 未deploy。
+
+---
+
 ## 4. Delivery rules
 
 > 逐条の正本は `Delivery System Rules.md`（2026-09-03）。本節はその要点と、それ以降の owner decision による確定事項を集約する。矛盾時は「最新 owner decision > 本節 > Delivery System Rules.md 逐条」。
@@ -126,6 +159,13 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 - Domestic Shipping 申込み時、Japan-only / tracking number email 通知 / carrier引渡し後の責任分界（当店の発送手配ミスは免責しない）を明示し、同意チェックボックスを必須とする（未チェックの間 ¥1,000 payment CTA を無効化）。
 - Demo Mode は `secondDeliveryDateTime` のデモ値を持ち、実際に+90分フィルタが機能することを確認できる（originalDeliveryDateTime へのfallbackが発生しないことも含む）。
 - **同期範囲（owner decision 2026-09-13・確定）：** 上記ルールは `ng2.html` / `terms.html` / `commerce.html` に加え、`index.html` の Important Notice・FAQ・注文直前の Important Rules（`del_rules_list`）へも簡潔な要約を反映する。初回注文画面の conversion を害さないよう、詳細は Terms/FAQ/ng2.html に譲り、注文直前の注意文は一文程度に留める。fr/de/es/it（`js/translations.json`）へも同内容を翻訳し、English fallback 漏れがないことを確認する。Green（PR #31）・Blue（PR #32、法務文言のみ）双方で同期済み。
+- **表記統一（owner decision 2026-09-17・確定）：** 顧客向け表示文言の "hotel" 固定表現は **"Accommodation"** へ統一する（`del_rules_list` / Important Notice / FAQ / terms / commerce 含む、英語表記の統一。日本語側の「宿泊施設」は変更なし）。
+- **Important Rules 追記（owner decision 2026-09-17・確定）：** 到着後10分待機ルールの記述の後に、以下を明記する:
+  - 最短90分後から無料再配達可能（§3 step 6 の `originalDeliveryDateTime + 90分` と同一）。
+  - 無料は1回のみ（§4.8 と同一）。
+  - 営業時間内の空き枠から選択（§4.3 の「営業時間内空き枠」と同一）。
+  - **旧記述「再配達希望時間120分前まで無料」は削除する。** 本ファイルには元々この記述はない（`RENOVATION_EXECUTION.md` §10.3 の旧フィールド削除計画に含まれる「旧120分ルール」はコード側の legacy 参照であり、本節とは別管理）。もし顧客向け UI 文言に同種の旧表現が残っていれば、この owner decision をもって置き換える。
+  - 実装状況: 上記の文言統一・追記は canonical 決定のみで、`index.html` 等コード側への反映は未実施（コード repo 変更は本更新の対象外）。
 
 ### 4.7 Slot / reschedule の不変則
 - 各予約は ±1枠の footprint を占有する。
@@ -156,6 +196,12 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 ### 4.12 fail-closed legacy behavior
 - 新モデルに必要なタイムスタンプ・状態が復旧不能な legacy 注文は、危険側に倒すのではなく **fail closed**（該当機能を提供しない）とし、admin での個別対応に委ねる。
 
+### 4.13 Delivery Time UI canonical（2026-09-17 owner decision）
+- **Other / Special Request は廃止。** 配達時間選択の選択肢は「Night & Early Morning」→「Next-day Express Delivery」の順のみとする。
+- Delivery time 選択 UI は **AM / PM タブ**へ変更する（時刻を1本のリストで見せる現行方式から変更）。
+- Cutoff 表示は **"Order by midnight"** を基本文言とする。**00:00–00:10 のグレースピリオド**（§4.3 既存運用）は基本文言と混在させず、別文として明記する。
+- **実装状況:** UI変更は未実装（canonical 決定のみ）。既存の Express Overnight（§5.3, 23:59 締切）・グレースピリオド運用（§4.3）とは矛盾しない — 表示文言と UI 構造のみの変更であり、締切時刻・料金・対応時間帯（翌日 04:00–08:00 / 20:00–24:00）は変更しない。
+
 ---
 
 ## 5. Product / pricing
@@ -167,8 +213,8 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 - Series canonical は `series_id` / `category_id` / `label` / `sort_order` / `status`。Series は `price` / `base_price` / `additional_price` / `currency` を持たない。**価格 SSOT は Product** の `price` / `additional_price` / `currency`（`JPY`）。Series pricing 方針は撤回済み。
 - `additional_price` は**同じ `product_id` の2個目以降、1個あたり**の価格。合計は数量1なら `price`、数量2なら `price + additional_price`、数量3なら `price + 2 × additional_price`。異なる `product_id` 間で共有しない。
 - 現HPコードの Gift Series ID は `giftbox`。Matching Pair は business / display 名であり、`giftbox` → `matching_pair` の ID migration は未実施。
-- 将来の Green Storefront 入口は Select Series → Select Category。Classic (Daily Use) → Daily Use、Gift Box Series → Gift。Select Category UI変更は未実装。
-- 全商品30% OFF・クーポン・合計金額条件割引などは、将来の **Cart-level discount** として Product pricing と分離する。Cart と Cart-level discount engine は未実装。
+- ~~将来の Green Storefront 入口は Select Series → Select Category。~~ **superseded（2026-09-17）:** Storefront 入口は Select Category 専用画面を廃止し、単一の Order Builder + 上部常設 `[ Daily Use ] [ Gift ]` トグルへ変更。詳細・フロー全体は §3a。
+- 全商品30% OFF・クーポン・合計金額条件割引などは、将来の **Cart-level discount** として Product pricing と分離する。Cart-level discount engine は未実装（Cart 自体は §3a・PR #73 で表示・レビューまで実装済み）。
 
 ### 5.1 Classic (Daily Use) — 現行
 - 刻印対象: 箸のみ。着色: 金・銀・無色（Burn）。「Silver」は廃止済み。
@@ -187,6 +233,7 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 
 ### 5.3 Express Overnight Delivery — 現行
 - 追加料金 **+¥3,000**。翌日配達（朝・夜いずれも）を選んだ場合に自動加算＋同意チェックボックス。23:59 締切。対応時間 翌日 04:00–08:00 / 20:00–24:00。
+- **canonical Order Core 上の扱い（2026-09-17 owner decision）：** Express の +¥3,000 は **Product price へ混ぜない**。`order-level charge` として Product Line 群とは別に扱う（詳細・実装 §5.9・§8.3a）。
 
 ### 5.4 NG2 対応の料金 — 現行
 - 3rd Delivery ¥1,000 / Domestic Shipping ¥1,000 / Disposal 無料。
@@ -205,7 +252,16 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 
 ### 5.8 実装境界
 - Delivery Core PR #89（HEAD `75aa594aff71e56558bb3a98c67b4d735554384a`）で Series canonical と Product の `price` / `additional_price` / `currency` は実装済み（254/254 tests pass）。既存 Product の `additional_price` / `currency` 欠損は自動migrationしない。
-- Admin Products `additional_price` UI、Storefront Product 価格表示、pricing calculation、Cart、Cart-level discount、Order pricing snapshot / 接続は未実装。
+- Admin Products `additional_price` UI、Storefront Product 価格表示、pricing calculation、Cart-level discount は未実装（pricing calculation・Cart は hp PR #73/#74 で表示・レビューまで実装済み。Order pricing snapshot は §5.9・PR #74。server-authoritative pricing の Order 接続は §8.3a・delivery-core PR #90）。
+
+### 5.9 Server-authoritative pricing / Order pricing snapshot（2026-09-17 owner decision）
+- **server-authoritative pricing を canonical Order で採用する。** クライアント側の合計金額表示は参考値であり、Order 確定金額の正本ではない。
+- Order create 成功時、**server が確認済みの pricing snapshot を固定保存**する（`schema_version: 1`）。保存後は Cart/Product の以後の価格変更の影響を受けない。
+- Express の +¥3,000 は `order-level charge` として Product Line 群と分離して保持する（§5.3）。
+- **実装境界:**
+  - Storefront 側（hp PR #74）: reviewed 済み Cart から `schema_version: 1` の pricing snapshot を都度再生成（キャッシュ・永続化しない、in-memory のみ）。Daily Use は `product_id` / `category_id` / 必須 `series_id` / Unit 単位の製作情報を保持し、pricing source を `canonical_product`（Product SSOT 準拠）と `legacy_daily_use` に区別する。Gift は `legacy_gift` pricing を使用し、`series_id` は canonical 識別子が無い場合 `null`（推測で埋めない）。Gift `additional_price` は生成しない（§5.2・§11 の未決定を尊重）。混載 Cart の snapshot 生成はブロック。Express 手数料は Line とは別に order-level charge として再計算。
+  - Server 側（delivery-core PR #90）: `core_create_order` が現在の server Product `price` / `additional_price` から各 Product Line を再計算し、server-authoritative pricing を Line 単位・category 別 subtotal・JPY 通貨・Express order-level charge・配達日時とともに Order へ確定保存する。クライアント送信の合計額（`client_total`）は **一致検証のみ**に使用し、金額の正本としない。
+  - どちらも production 未接続（storefront → `core_create_order` の配線は未実装。§3a.5・§8.3a 参照）。
 
 ---
 
@@ -284,6 +340,20 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 - **Green GAS foundation:** delivery-core PR #57（`green-gas-foundation` @ `33475bb`）。fail-closed 実装、482 tests passed。service account 設定・clasp・deploy・外部書き込みは未実施。
 - **共通 slot 予約処理（設計）:** `reserveDeliverySlot(...)` に集約 — 入力検証 → Script Lock → fresh read → 枠確認 → 前後±30分算出（日跨ぎ）→ atomic write → order 状態更新 → Lock release → Mail/Sheet/Calendar 副作用。副作用は slot 確保と分離し、失敗時に予約成立を壊さない。
 
+### 8.3a canonical Order Core contract（2026-09-17 owner decision）
+- 新 action **`core_create_order`**（`schema_version: 1`）を Green canonical Order 作成契約とする。
+- **必須:** `idempotency_key`。
+- **structured payload:** `lines` / `units` / `delivery` / `customer` / `accommodation` / `contact` / pricing snapshot（§5.9）。
+- **Daily Use + Gift の混載 Order に対応する**（backend 契約として。storefront 接続は §3a.5 の通り未実装）。
+- **旧 `core_new_order` は Blue legacy route として残すが、Green canonical contract には使用しない。** `core_new_order` 自体への変更は行わない。
+- **実装境界:** delivery-core PR #90（`feature/canonical-order-contract-20260917`）。server Product `price`/`additional_price` から Line 単位で再計算（同一 Product のみ additional_price 適用）。Daily Use + Gift 混載対応。Gift は Product に `additional_price` が無い場合、数量2以上を拒否。`client_total` は一致検証のみに使用。ローカル mock テストのみ（16/16 pass）。production/backend 呼び出し 0 件。Stripe 連携・Storefront endpoint 接続は本 PR の範囲外。`main` 未merge・production 未deploy。
+
+### 8.3b Reservation ownership（2026-09-17 owner decision）
+- **Green server が以下を所有する（single source of truth）:** reserved stock / delivery slot / production capacity。
+- Order 作成 / idempotency / stock / delivery slot / production capacity hold は **同じ reservation 境界（1つの atomic ロック付き更新）**で処理する。
+- **Blue の `usedMinutes` との dual-write は禁止。** Green の Order 作成経路は Blue `usedMinutes` を読み取らず、同期も書き込みも行わない。
+- **実装境界:** delivery-core PR #90。Green は `dailyOperations/{date}/productionReservedMinutes` と `dailyOperationDefaults/productionCapacityMinutes` を使用（既存 server 側 `productionMinutesFor` の計算ルールを再利用）。Order・idempotency mapping・reserved stock・delivery slot・Green production minutes を1つの locked update で書き込む。重複 retry は新規 hold を作らず既存 Order を返す。有効期限切れの決済 hold は Green production minutes を解放する。
+
 ### 8.4 Stripe
 - Checkout Session API（動的生成）。手数料 3.6%。100% 事前決済。
 - **Green は Stripe Test Mode** を使用し、本番決済へ接続しない。
@@ -303,6 +373,7 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 - **Green** = 非公開の Renewal 統合環境（project `chopstickers-project`）。完成した部品を順次持ち込み、接続のたびに実動テスト。
 - Green へ統合する際、**Blue の本番設定（Firebase config / RTDB URL / GAS endpoint / Stripe 本番キー）をそのまま持ち込まない。** production-derived な接続は Green-safe 化 / quarantine する。
 - 最終アクションは「公開先を完成済み Green へ切り替える（cutover）」。本番を現在地で作り替えない。cutover 後も rollback 経路を維持。
+- **capacity cutover 後の正本（2026-09-17 owner decision）：** production capacity カウンターは cutover 完了後、**Green counter のみを正本**とする。Blue `usedMinutes` との**恒久的な sync・compatibility counter は禁止**（§8.3b の dual-write 禁止と同じ原則を cutover 後も維持）。cutover 手順そのものは `RENOVATION_EXECUTION.md` §4.12。
 
 ---
 
@@ -327,6 +398,15 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 - DNS / ドメイン変更
 - これらに到達したら停止し、必要な承認を具体的に述べる（`RENOVATION_EXECUTION.md` §9、`AUTOMATION_CONTRACT.md` §7）。
 
+### 9.4 Temporary production mode — Coming Soon（2026-09-17 owner-approved）
+- **Renewal 完成まで、現行 Blue ordering UI を一時休止する。** production homepage は Renewal / Coming Soon 紹介モードとする。
+- **残す:** FV / Katakana Converter / Engraving Preview / Product Lineup（read-only）/ Brand・Service information / Legal / Contact。
+- **停止:** Order UI / Delivery slot selection / Customer order form / Checkout / Stripe order flow / GAS order flow。
+- **EN / DE / ES / FR / IT すべて同じ扱い**（注文導線停止を全言語で統一）。
+- **旧 Blue 注文コードは削除せず保持する。** frontend 表示・到達可否のみを変更し、production Firebase / GAS / Stripe / DNS / Admin は変更しない。
+- これは **temporary production mode** であり、Renewal 完成後に Green Storefront（§3a）へ置換される。
+- **実装境界:** hp PR #75（`renewal/coming-soon-mode-20260917`、base `reconciliation/blue-production-sync-20260914`）。`window.RENEWAL_COMING_SOON` フラグで order-entry point（Classic/Gift select・sticky CTA・FV preview-modal Order・Lineup product-modal action・homepage delivery calendar）と `window.enterFocusMode()` をガード。`#delivery-section` は非表示。GAS/Stripe 通信 0 件をローカル + preview channel で確認済み。**2026-09-17 時点で production 未deploy**（`main` 未merge・auto-merge禁止・owner 承認済みだが実 deploy コマンドは環境側ガードで保留中）。deploy 完了後、本節と `RENOVATION_EXECUTION.md` §4.13 の status を更新する。
+
 ---
 
 ## 10. Canonical business invariants
@@ -348,6 +428,11 @@ AI・実装者が **owner の明示的決定なしに変更してはならない
 13. Blue 本番は cutover まで維持。Green へ Blue 本番設定を持ち込まない。production-derived 接続は quarantine する。
 14. GitHub が canonical。production boundary（§9.3）を越える操作は owner 承認必須。
 15. コピーライティングは Honest & Minimal。誇張表現を使わない。
+16. Storefront 入口は単一 Order Builder（上部常設 `[ Daily Use ] [ Gift ]`）。専用 Select Category 画面は廃止（§3a）。
+17. Cart は Daily Use / Gift 混載表示可能・共通 canonical。Product identity は `product_id`。全 Line review gate なしに checkout 不可（§3a.4）。
+18. 価格 SSOT は Product の `price` / `additional_price` / `currency`。Order 確定金額は server-authoritative。Order create 成功時の pricing snapshot（`schema_version: 1`）は以後の価格変更の影響を受けない（§5.0・§5.9）。
+19. Green の Order 作成は `idempotency_key` 必須の同一 reservation 境界で stock / delivery slot / production capacity を処理する。Blue `usedMinutes` との dual-write・恒久 sync counter は禁止（§8.3b・§8.7）。
+20. Renewal 完成まで production は Coming Soon temporary mode。旧 Blue 注文コードは削除しない（§9.4）。
 
 ---
 
