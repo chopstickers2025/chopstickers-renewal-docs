@@ -8,7 +8,7 @@ Chopstickers Renewal 実行正本 / Execution Single Source of Truth
 - **本ファイルの位置づけ:** Chopstickers Renewal を完成させるための **現在地・統合順序・制御方法** の正本。「今どこまで出来ていて、次に何をどうするか」を定義する。
 - **対になる文書:** 事業・システムの「あるべき仕様」は `CHOPSTICKERS_CANONICAL.md`。本ファイルには business rule を書かない（参照のみ）。
 - **自動化制御の詳細:** `docs/AUTOMATION_CONTRACT.md`（delivery-core）。本ファイル §7 はその要約。
-- **更新日:** 2026-09-16（pricing canonical の実装境界を追記）。
+- **更新日:** 2026-09-17（Storefront Cart/Order Builder・canonical Order Core・Temporary Coming Soon production mode の owner decision と実装状況を追記。§4.13〜4.15・§11）。
 - **authority:**
   - business / system 事実 → `CHOPSTICKERS_CANONICAL.md` が優先。
   - execution / progress / integration 順序 → 本ファイルが優先。
@@ -56,6 +56,9 @@ Chopstickers Renewal 実行正本 / Execution Single Source of Truth
 | `admin-products-green-storage-20260910` | `1eb4912` | admin-products の Green Firebase Storage / RTDB 統合（Auth ゲート + 画像永続化 + ルール案）。PR #21 |
 | `claude/issue-22-20260910-1613` | — | automation control-plane contract scaffold（hp 側）。PR #23 |
 | `claude/issue-17-20260908-2118` | `e5ca3b3` | Green pre-Firebase quarantine safeguards。PR #18 |
+| `reconciliation/blue-production-sync-20260914` | `c63fa85` | **Blue 本番 reconciliation branch**（実 deploy 済み状態を反映）。`main` ではなくこの branch が現行 Blue 本番の実体に最も近い。PR #75 の base |
+| `storefront-category-entry-20260916` 〜 `storefront-cart-order-builder-20260917` 〜 `storefront-order-pricing-snapshot-20260917` | — | Storefront Green 統合の stacked PR 群（#55〜#74）。直近: PR #73（Cart/Review）→ PR #74（Pricing Snapshot）。詳細 §4.14 |
+| `renewal/coming-soon-mode-20260917` | — | **Temporary Coming Soon production mode**。PR #75（base `reconciliation/blue-production-sync-20260914`）。詳細 §4.13 |
 
 ### 3.3 delivery-core repo の重要ブランチ
 | branch | 最新 | 役割 |
@@ -66,6 +69,7 @@ Chopstickers Renewal 実行正本 / Execution Single Source of Truth
 | `claude/issue-53-20260908-1417` | `c9c7622` | **PR #55**。Roadmap へ 2026-09-08 Strategy Revision（§0）を追記 |
 | `claude/issue-58-20260910-1603` | `433f87b` | **PR #59**。automation control-plane scaffold（`docs/AUTOMATION_CONTRACT.md` + `ops/renovation-status.json`） |
 | `automation/watchdog-v1-20260911` | `9724756` | **PR #60**。stalled-lane recovery watchdog v1（`.github/workflows/renovation-watchdog.yml`） |
+| `feature/canonical-order-contract-20260917`（base `feature/productseries-core-contract-20260916`） | — | **PR #90**。canonical Order Core（`core_create_order`）。詳細 §4.15 |
 
 ### 3.4 ローカル worktree（参考）
 - hp: `chopstickers-workshop/public`（Blue）/ `chopstickers-project/public`（Green base）/ `Documents/katakana-deploy-tree` / `Documents/katakana-r1-baseline`
@@ -189,8 +193,48 @@ Chopstickers Renewal 実行正本 / Execution Single Source of Truth
 ### 4.12 Production cutover
 - **status:** `not_started`（owner decision）
 - **remains:** 本番差分 diff / cutover 手順 / rollback 手順の最終検証 → owner が公開先を Green へ切り替え → 監視 → 必要時 Blue へ rollback。
+- **Blue → Green capacity cutover 手順（2026-09-17 owner decision・確定）：**
+  1. Blue 新規注文受付停止。
+  2. 未来日の有効 Blue 予約を監査。
+  3. 必要 production minutes を Green へ one-time migration。
+  4. migration 結果を検証。
+  5. Green order intake 開始。
+  - 以後は Green counter のみ正本（`CHOPSTICKERS_CANONICAL.md` §8.7）。恒久的な sync / compatibility counter は作らない。
+  - **実装状況:** 上記5ステップは canonical 決定のみで migration 自体は未実装（delivery-core PR #90 は Green 側の atomic reservation 実装までであり、Blue → Green の one-time migration ロジックは別途レビュー予定の migration plan が必要。対象 Blue フィールド候補は `status` / `paymentStatus` / `holdReleasedAt` / `holdExpiresAt` / `scheduledDateTime` だが、絞り込み条件は未確定）。
 - **dependency:** E2E（4.11）green。
 - **next_actionःなし（E2E 完了まで）。**merge to main / deploy / production Firebase・GAS・Stripe・Hosting・DNS は owner 承認まで実施しない。**
+
+### 4.13 現行 production 状態（Blue maintenance mode）/ Coming Soon frontend（PR #75）
+
+- **現在の production 状態（owner による手動切替・2026-09-17）：** owner が既存 **Blue サイトをメンテナンス＋配達受付停止モードへ手動切替**した。新規注文受付は停止中。現在 chopstickers.jp（EN/DE/ES/FR/IT）に表示されている "major renewal" / "Ordering is temporarily unavailable" の案内は、**この Blue 既存メンテナンスモードの手動切替によるもの**。下記 PR #75（Coming Soon frontend）の deploy によるものではない。business rule: `CHOPSTICKERS_CANONICAL.md` §9.4。
+- **status（PR #75, Coming Soon frontend）:** `review_ready`（PR 作成済み・`main` 未merge・**production 未deploy・現時点では本番投入しない方針**）。
+- **business rule:** `CHOPSTICKERS_CANONICAL.md` §9.4。
+- **source:** hp PR #75（`renewal/coming-soon-mode-20260917`、base `reconciliation/blue-production-sync-20260914`、**state: OPEN**）。
+- **done:** Renewal / Coming Soon バナー追加。Order-entry point（Classic/Gift select・sticky CTA・FV preview-modal Order・Lineup product-modal action・homepage delivery calendar）と `window.enterFocusMode()` を `window.RENEWAL_COMING_SOON` フラグでガード。`#delivery-section` 非表示。Katakana Converter / Engraving Preview は EN/DE/ES/FR/IT すべてで維持。旧 Blue 注文コードは削除せず、フラグで無効化のみ。ローカル + Firebase Hosting preview channel（`chopstickers-workshop--renewal-coming-soon-preview-*`）で GAS/Stripe 通信 0 件を確認済み。
+- **remains:** production Hosting への実 deploy（`firebase deploy --project chopstickers-workshop`）は **現時点では実施しない**（owner 方針。現行 Blue メンテナンスモードで新規注文受付停止という目的は既に満たされているため）。
+- **integration target:** production Hosting（`chopstickers-workshop`）。Green Storefront（§3a・4.14）完成後に置換。
+- **dependency:** なし（Blue frontend のみの変更、backend 非依存）。
+- **next_action:** 現時点で next_action なし（PR #75 の deploy は保留・見送り）。方針変更時、owner が `firebase deploy --project chopstickers-workshop` を実行するか実行許可を付与し、本節と `CHOPSTICKERS_CANONICAL.md` §9.4 の status を `deployed` へ更新して chopstickers.jp + /de /es /fr /it で Converter / Preview / Coming Soon CTA / 注文導線遮断 / GAS・Stripe 通信 0 を実ブラウザ確認する。
+
+### 4.14 Storefront Order Builder / Cart / Pricing Snapshot
+- **status:** `review_ready`（表示・レビューまで実装済み・`core_create_order` 未接続・`main` 未merge・production 未deploy）
+- **business rule:** `CHOPSTICKERS_CANONICAL.md` §3a（Order Builder 構造・Cart canonical）・§5.9（pricing snapshot）。
+- **source:** hp PR #73（`storefront-cart-order-builder-20260917`）→ PR #74（`storefront-order-pricing-snapshot-20260917`）。base chain は PR #55〜#74 の stacked storefront レーン（§3.2）。
+- **done:** 共有 Cart（category tabs・category 別 subtotal・Order Total）。Daily Use の Line 集約 + Unit 単位製作情報保持。共通 Review Modal シェル + category 別 renderer。編集時 `reviewed=false`。`schema_version: 1` pricing snapshot（in-memory のみ・reviewed Cart からのみ生成）。Express は order-level charge として Line と分離。
+- **remains:** Order Builder 入口（上部常設 `[ Daily Use ] [ Gift ]` トグルによる旧 Select Category 画面の置換）は未実装。Daily Use + Gift 混載 checkout は既存 submit payload の制約で意図的にブロック中 — `core_create_order`（4.15）接続が前提。Pair 固定状態表示の廃止（UI 側）は未実装。
+- **integration target:** `renewal/green-20260909`（storefront reconciliation・4.8 経由）。
+- **dependency:** canonical Order Core（4.15）の storefront 接続が混載 checkout 解禁の前提。
+- **next_action:** PR #73 → #74 を review。混載 checkout 解禁は `core_create_order` 接続（4.15）後に着手し、それまでは現行の意図的ブロックを維持する。
+
+### 4.15 canonical Order Core（`core_create_order`）
+- **status:** `review_ready`（`main` 未merge・production 未deploy・storefront 未接続）
+- **business rule:** `CHOPSTICKERS_CANONICAL.md` §8.3a（Order Core contract）・§8.3b（reservation ownership）。
+- **source:** delivery-core PR #90（`feature/canonical-order-contract-20260917`、base `feature/productseries-core-contract-20260916`）。
+- **done:** `core_create_order`（`schema_version: 1`、`idempotency_key` 必須）。server Product `price`/`additional_price` からの Line 再計算（same-product のみ additional_price 適用）。Daily Use + Gift 混載 Order 対応（backend 契約として）。Gift は `additional_price` 欠損時に数量2以上を拒否。Order・idempotency・reserved stock・delivery slot・Green production minutes を1つの atomic locked update で書き込み。重複 retry は新規 hold を作らず既存 Order を返す。有効期限切れ hold は production minutes を解放。Blue `usedMinutes` は読み取り・同期・書き込みいずれも行わない。ローカル mock テスト 16/16 pass。
+- **remains:** Blue → Green の capacity one-time migration（4.12 記載の手順自体）は未実装。Storefront（4.14）からの接続、Stripe 連携は範囲外・未着手。
+- **integration target:** Green GAS project（`clasp` deploy は owner 承認後）。
+- **dependency:** Green GAS foundation（4.2）。
+- **next_action:** PR #90 を review。storefront 混載 checkout（4.14）と接続する前に、承認済みレビューと Green GAS への deploy 判断（owner）を経る。
 
 ---
 
@@ -356,8 +400,11 @@ reversible な repo-only 作業（コード / docs / テスト / branch / commit
 8. **Katakana**: `feature/katakana-r2-20260910` @ `39bea3c` の engine/dict を `renewal/green-20260909` へ unit 取り込み、ブリッジ差分を Green の `ui.js` / HTML へ手適用。
 9. 上記マージ後に **Green frontend / storefront reconciliation** → **E2E**（Green・staging）。
 10. E2E green 後に **production cutover decision**（owner）。
+11. **hp PR #75（Coming Soon frontend）の production Hosting deploy**（4.13）— **現時点では保留（本番投入見送り）。** 現行 production は既存 Blue メンテナンスモードの手動切替で新規注文受付停止済みのため。方針変更時のみ、owner が `firebase deploy --project chopstickers-workshop` を実行、または実行許可を付与。deploy 完了後に実ブラウザで chopstickers.jp + /de /es /fr /it・Converter・Preview・Coming Soon CTA・注文導線遮断・GAS/Stripe 通信 0 を確認し status 更新。
+12. **hp PR #73 → #74 を review**（4.14）— Cart/Review・Pricing Snapshot。混載 checkout 解禁は次項の後。
+13. **delivery-core PR #90 を review**（4.15）— canonical Order Core。review 後、storefront 接続・Green GAS deploy 判断は owner。
 
-**禁止（再掲）:** main merge / PR merge / production deploy / clasp push・deploy / 本番 Firebase write / rules apply / Stripe production / Hosting deploy / DNS 変更 / PR #56 の再実装 / Katakana 成果の再実装 / Blue public 丸ごとコピー / Green admin-products の Blue 版上書き / coverage 確認前の old docs 削除。
+**禁止（再掲）:** main merge / PR merge / production deploy / clasp push・deploy / 本番 Firebase write / rules apply / Stripe production / Hosting deploy / DNS 変更 / PR #56 の再実装 / Katakana 成果の再実装 / Blue public 丸ごとコピー / Green admin-products の Blue 版上書き / coverage 確認前の old docs 削除 / 旧 Blue 注文コードの削除（4.13）。
 
 ---
 

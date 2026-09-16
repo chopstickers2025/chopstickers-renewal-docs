@@ -67,6 +67,17 @@
 
 **2026-09-16 owner decision（履歴追記）:** 旧 Series pricing 方針を撤回し、Product の `price` / `additional_price` / `currency` を価格 SSOT とした。Series は `series_id` / `category_id` / `label` / `sort_order` / `status` のみ。詳細と未実装境界は C §5、E §4.3a。旧方針の記録は歴史資料として維持する。
 
+**2026-09-17 owner decision（履歴追記）:** 以下を canonical へ反映。旧記述は「取り消し線 + 新（日付）」形式または明示的 supersede 注記で歴史資料として残す。
+- **Storefront 入口:** 旧「Select Category 専用画面 → Category → 注文画面」を廃止し、単一 Order Builder（上部常設 `[ Daily Use ] [ Gift ]`）へ統一。C §5.0 の旧「Select Series → Select Category」記述は C §3a へ supersede 済み。詳細 C §3a、E §4.14。
+- **Cart / Review:** 共通 Cart canonical（`product_id` 識別・Daily Use Line 集約 + Unit 保持・全 Line review gate・category 別 renderer）。旧 Pair 固定状態表示は廃止方向。詳細 C §3a.4。
+- **Pricing:** server-authoritative pricing・Order create 時の pricing snapshot 固定（`schema_version: 1`）・Express は order-level charge（Product price に混ぜない）。詳細 C §5.9。
+- **canonical Order Core:** 新 action `core_create_order`（`schema_version: 1`、`idempotency_key` 必須）。旧 `core_new_order` は Blue legacy route のまま維持し Green canonical には使わない。詳細 C §8.3a、E §4.15。
+- **Reservation ownership:** Green server が reserved stock / delivery slot / production capacity を所有。Blue `usedMinutes` との dual-write 禁止。詳細 C §8.3b。
+- **Blue → Green capacity cutover:** 5ステップ手順（新規受付停止 → 予約監査 → one-time migration → 検証 → Green intake 開始）。以後 Green counter のみ正本、恒久 sync counter 禁止。詳細 C §8.7、E §4.12。
+- **Delivery Time UI:** Other/Special Request 廃止。AM/PM タブへ変更。Cutoff は "Order by midnight" を基本文言とし、グレースピリオドは別文明記。詳細 C §4.13。
+- **Important Rules 文言:** "hotel" → "Accommodation" 表記統一。到着後10分待機ルールの後に無料再配達3点（最短90分後・1回のみ・営業時間内空き枠）を明記。旧「120分前まで無料」表現は使わない。詳細 C §4.6a。
+- **Temporary Coming Soon production mode（PR #75, hp）:** owner 承認済みの実装だが、**現時点では本番投入しない方針**（`main` 未merge・production 未deploy）。旧 Blue 注文コードは削除せず保持する設計。詳細 C §9.4、E §4.13。**現行 production の "Ordering unavailable" 表示は、この PR #75 の deploy ではなく、owner が既存 Blue サイトを手動でメンテナンス＋配達受付停止モードへ切り替えたことによるもの**（2026-09-17）。
+
 ---
 
 ## 3. Old docs classification（Phase D 提案・未実施）
