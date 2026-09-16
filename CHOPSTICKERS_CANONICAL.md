@@ -7,7 +7,7 @@ Chopstickers 事業・システム 正本 / Business & System Single Source of T
 
 - **本ファイルの位置づけ:** Chopstickers の「事業として何を提供しているか」「システムがどう振る舞うべきか」を定義する **business / system canonical source**。
 - **対になる文書:** 改修の進行・統合順序・作業ルールは `RENOVATION_EXECUTION.md`（execution canonical）。本ファイルにはタスク状態を書かず、仕様の実装境界のみ §5.8・§3a.4・§8.3a/8.3b に記す。
-- **更新日:** 2026-09-17（Storefront Order Builder / Cart / canonical Order Core / reservation ownership / Delivery Time UI / Important Rules 文言 / Temporary Coming Soon production mode の owner decision を反映。詳細は §3a・§4.13・§5.9・§8.3a・§8.3b・§9.4）
+- **更新日:** 2026-09-17（Storefront Order Builder / Cart / canonical Order Core / reservation ownership / Delivery Time UI / Important Rules 文言 / Temporary Coming Soon production mode / Gift Product `additional_price` の owner decision を反映。詳細は §3a・§4.13・§5.2・§5.9・§8.3a・§8.3b・§9.4）
 - **supersedes（本ファイルが正本を引き継ぐ対象。原本は参照資料として残す）:**
   - Google Drive『事業概要_最新版_20260908』のうち「現行サービス／事業コンセプト／配送ルール／価格／admin構成／データ構成」に関する記述
   - Google Drive『事業概要_Chopstickers_v2.md』（旧版・全体）
@@ -227,7 +227,8 @@ Category → Matching Pair → Gift Product → Gift engraving → Cart / Review
 - 刻印対象: 桐箱のみ（箸本体への刻印なし）。使用可能文字: **英語のみ**（カタカナ非対応）。
 - Engimon (Gift Box)（旧・梅）: **¥5,800**。
 - Happy Life (Gift Box)（旧・竹）: **¥7,800**。
-- Product pricing canonical: Engimon `price=5800`、Happy Life `price=7800`、いずれも `currency=JPY`。Gift Product の `additional_price` は未決定（`0` や通常価格と同額を設定しない）。
+- **Product pricing canonical（2026-09-17 owner decision・確定）:** Engimon `price=5800` / `additional_price=5000`、Happy Life `price=7800` / `additional_price=7000`。いずれも `currency=JPY`。適用ルールは Daily Use（§5.1）と同じく **同一 `product_id` の2点目以降にのみ適用**（例: Engimon×2 = ¥5,800+¥5,000=¥10,800、Happy Life×2 = ¥7,800+¥7,000=¥14,800。異なる `product_id` 同士は合算せず、それぞれ1点目価格から開始）。`price` からの自動計算式（例:「常に-¥800」）にはせず、Product ごとに独立した固定値として保持する。将来 `price` が変更されても `additional_price` は自動更新しない。Admin Products から Product ごとに個別管理できる構造を正本とする。
+- 木箱刻印は数量追加ごとに製作時間・レーザー照射・レンズ等消耗品・機材稼働・清掃・製作ミスのリスクが継続して発生するため、Classic ほど大きな追加割引にはしない（Engimon ¥5,000 / Happy Life ¥7,000 の由来）。
 - 「松（Pine）」プラン・「松竹梅」プラン名は**完全廃止**。
 - 文字数/行数: Engimon 最大18文字 × 8行 / Happy Life 最大18文字 × 12行。上限 20文字 / 15行（DailyLog 2026-09-08）。フォント: Times New Roman（Bold + Italic）。センター寄せ。
 
@@ -259,7 +260,7 @@ Category → Matching Pair → Gift Product → Gift engraving → Cart / Review
 - Order create 成功時、**server が確認済みの pricing snapshot を固定保存**する（`schema_version: 1`）。保存後は Cart/Product の以後の価格変更の影響を受けない。
 - Express の +¥3,000 は `order-level charge` として Product Line 群と分離して保持する（§5.3）。
 - **実装境界:**
-  - Storefront 側（hp PR #74）: reviewed 済み Cart から `schema_version: 1` の pricing snapshot を都度再生成（キャッシュ・永続化しない、in-memory のみ）。Daily Use は `product_id` / `category_id` / 必須 `series_id` / Unit 単位の製作情報を保持し、pricing source を `canonical_product`（Product SSOT 準拠）と `legacy_daily_use` に区別する。Gift は `legacy_gift` pricing を使用し、`series_id` は canonical 識別子が無い場合 `null`（推測で埋めない）。Gift `additional_price` は生成しない（§5.2・§11 の未決定を尊重）。混載 Cart の snapshot 生成はブロック。Express 手数料は Line とは別に order-level charge として再計算。
+  - Storefront 側（hp PR #74）: reviewed 済み Cart から `schema_version: 1` の pricing snapshot を都度再生成（キャッシュ・永続化しない、in-memory のみ）。Daily Use は `product_id` / `category_id` / 必須 `series_id` / Unit 単位の製作情報を保持し、pricing source を `canonical_product`（Product SSOT 準拠）と `legacy_daily_use` に区別する。Gift は `legacy_gift` pricing を使用し、`series_id` は canonical 識別子が無い場合 `null`（推測で埋めない）。**canonical 仕様は Gift にも Product 単位の `additional_price` を適用すると確定済み（§5.2, 2026-09-17 owner decision）だが、PR #74 のこの pricing snapshot 生成ロジックはまだ対応しておらず、Gift `additional_price` を生成しない現状のまま**（実装反映は未着手。§4.3a）。混載 Cart の snapshot 生成はブロック。Express 手数料は Line とは別に order-level charge として再計算。
   - Server 側（delivery-core PR #90）: `core_create_order` が現在の server Product `price` / `additional_price` から各 Product Line を再計算し、server-authoritative pricing を Line 単位・category 別 subtotal・JPY 通貨・Express order-level charge・配達日時とともに Order へ確定保存する。クライアント送信の合計額（`client_total`）は **一致検証のみ**に使用し、金額の正本としない。
   - どちらも production 未接続（storefront → `core_create_order` の配線は未実装。§3a.5・§8.3a 参照）。
 
@@ -425,7 +426,7 @@ AI・実装者が **owner の明示的決定なしに変更してはならない
 8. 返金は不在では不可。製造欠陥・刻印ミスのみ再送 or 全額返金。
 9. 保管期限 = 初回配達予定日 + 7 暦日 23:59 JST。曖昧表現を使わない。
 10. Classic の刻印は英数字・ひらがな・カタカナのみ・最大10文字。Gift（桐箱）は英語のみ。
-11. 現行価格: Classic ¥3,500（+¥2,000/膳・最大5膳）、Engimon ¥5,800、Happy Life ¥7,800、Express +¥3,000。
+11. 現行価格: Classic ¥3,500（+¥2,000/膳・最大5膳）、Engimon ¥5,800、Happy Life ¥7,800、Express +¥3,000。Gift Product `additional_price`（2026-09-17 決定・実装未完了）: Engimon +¥5,000 / Happy Life +¥7,000（同一 `product_id` の2点目以降のみ、詳細 §5.2）。
 12. admin 責務境界: General = 運行・capacity・カレンダー、Delivery = Delivery List・配達実行・NG フロー、Products = 在庫・商品マスター・画像。Extra Slots は削除。
 13. Blue 本番は cutover まで維持。Green へ Blue 本番設定を持ち込まない。production-derived 接続は quarantine する。
 14. GitHub が canonical。production boundary（§9.3）を越える操作は owner 承認必須。
@@ -446,7 +447,6 @@ AI・実装者が **owner の明示的決定なしに変更してはならない
 |---|---|
 | 3rd Delivery の「決済中の枠確保タイミング」（決済前の短時間 hold / 決済成功時 atomic 確保 / 既存 Stripe フロー活用 のどれか） | 未確定。Phase 1-A〜1-C で現行 Stripe/GAS を監査してから確定。確定前に 3rd Delivery 決済コードを実装しない（`再配達システム改修_設計書.md` §12） |
 | Sakura Series のフロント追加・for kids（18cm）表示 | 未確定。価格方針は Classic と同額で確定済み（§5.5） |
-| Gift Product の `additional_price` | 未決定。Engimon / Happy Life の通常価格は確定済み（§5.2） |
 | 配達エリア拡大（港区・渋谷区・新宿区の段階的緩和） | 未確定（新橋周辺は厳格除外を維持） |
 | Stripe Webhook 連携による在庫・記帳の完全自動化 | 未着手課題 |
 | 複数種同時購入（"+ Add a Gift Box"） | 未着手課題 |

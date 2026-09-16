@@ -8,7 +8,7 @@ Chopstickers Renewal 実行正本 / Execution Single Source of Truth
 - **本ファイルの位置づけ:** Chopstickers Renewal を完成させるための **現在地・統合順序・制御方法** の正本。「今どこまで出来ていて、次に何をどうするか」を定義する。
 - **対になる文書:** 事業・システムの「あるべき仕様」は `CHOPSTICKERS_CANONICAL.md`。本ファイルには business rule を書かない（参照のみ）。
 - **自動化制御の詳細:** `docs/AUTOMATION_CONTRACT.md`（delivery-core）。本ファイル §7 はその要約。
-- **更新日:** 2026-09-17（Storefront Cart/Order Builder・canonical Order Core・Temporary Coming Soon production mode の owner decision と実装状況を追記。§4.13〜4.15・§11）。
+- **更新日:** 2026-09-17（Storefront Cart/Order Builder・canonical Order Core・Temporary Coming Soon production mode・Gift Product `additional_price` の owner decision と実装状況を追記。§4.3a・§4.13〜4.15・§11）。
 - **authority:**
   - business / system 事実 → `CHOPSTICKERS_CANONICAL.md` が優先。
   - execution / progress / integration 順序 → 本ファイルが優先。
@@ -115,7 +115,12 @@ Chopstickers Renewal 実行正本 / Execution Single Source of Truth
 
 ### 4.3a Product pricing / Series read contract（Issue #83）
 - **status:** Product pricing canonical + Series read contract は Delivery Core PR #89（HEAD `75aa594aff71e56558bb3a98c67b4d735554384a`）で実装済み。Series に価格は持たせない（business rule は `CHOPSTICKERS_CANONICAL.md` §5）。254/254 tests pass。
-- **remains:** 既存 Product の `additional_price` / `currency` 欠損は自動migrationしない。Admin Products `additional_price` UI、Storefront Product 価格表示、pricing calculation、Cart、Cart-level discount、Order pricing snapshot / 接続、`giftbox` → `matching_pair` ID migration、Select Category UI変更は未実装。
+- **Gift additional_price（2026-09-17 owner decision・確定・実装未完了）:** Engimon `additional_price=5000`、Happy Life `additional_price=7000`（`CHOPSTICKERS_CANONICAL.md` §5.2）。**canonical 仕様は決定済み。** 以下の実装接続がまだ残っている:
+  - Admin Products で Gift Product の `price` / `additional_price` / `currency` を個別管理する UI。
+  - Storefront Product card 表示（Gift の2点目以降価格の反映）。
+  - Cart pricing 計算（Gift Line の2点目以降金額）。
+  - Pricing Snapshot（hp PR #74）/ Order pricing snapshot（delivery-core PR #90）への接続 — 現状は `legacy_gift` pricing のまま `additional_price` を生成しない（`CHOPSTICKERS_CANONICAL.md` §5.9）。
+- **remains:** 既存 Product の `additional_price` / `currency` 欠損は自動migrationしない。上記 Gift 対応に加え、Storefront Product 価格表示、pricing calculation、Cart、Cart-level discount、Order pricing snapshot / 接続、`giftbox` → `matching_pair` ID migration、Select Category UI変更は未実装。
 
 ### 4.4 Admin Delivery
 - **status:** `review_ready`（Green shape 統合 PR 提出済み・未マージ）
